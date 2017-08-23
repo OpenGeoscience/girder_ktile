@@ -25,5 +25,3 @@ def addItemMeta(event):
 # http://girder.readthedocs.io/en/latest/plugin-development.html#extending-the-server-side-application
 def load(info):
     info['apiRoot'].ktile = kTile()
-
-    events.bind('model.item.save.after', 'add_ktile_item_meta', addItemMeta)
