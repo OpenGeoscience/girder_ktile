@@ -16,7 +16,13 @@ wrap(FileListWidget, 'render', function (render) {
         el: $('#g-dialog-container'),
         parentView: this
     });
-    this.$('.g-show-info').after(ButtonView());
+    _.each(this.$('.g-file-list-link'), (link) => {
+        const file = this.collection.get($(link).attr('cid'));
+        if (file.get('mimeType') === 'image/tiff') {
+            $(link).after(ButtonView({cid: file.cid}));
+        }
+    });
+
 });
 
 var MapViewWidget = View.extend({
