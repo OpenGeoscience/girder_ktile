@@ -47,7 +47,8 @@ var MapViewWidget = View.extend({
                         x: center_wgs84[0],
                         y: center_wgs84[1]
                     },
-                    zoom: 7
+                    zoom: 12,
+                    max: 22
                 });
 
                 map.createLayer('osm');
