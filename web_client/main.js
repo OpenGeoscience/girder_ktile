@@ -3,7 +3,8 @@ import { wrap } from 'girder/utilities/PluginUtils';
 import FileListWidget from 'girder/views/widgets/FileListWidget';
 import 'girder/utilities/jquery/girderModal';
 import geo from 'geojs';
-import {getApiRoot} from 'girder/rest';
+import {getApiRoot, restRequest} from 'girder/rest';
+import _ from 'underscore';
 
 import ButtonView from './templates/view.pug';
 import MapWidgetTemplate from './templates/mapWidget.pug';
@@ -27,28 +28,38 @@ wrap(FileListWidget, 'render', function (render) {
 
 var MapViewWidget = View.extend({
     drawMap: function (fileId) {
-        // Run after the DOM loads
-        $(function () {
-            'use strict';
-            // Create a map object
-            var map = geo.map({
-                node: '#map',
-                center: {
-                    x: -98.0,
-                    y: 39.5
-                },
-                zoom: 3
-            });
+        var url = '/ktile/' + fileId + '/info';
+        restRequest({
+            method: 'GET',
+            path: url
+        }).done(_.bind(function (resp) {
+            var center = [(resp.corners.ulx + resp.corners.lrx) / 2,
+                          (resp.corners.uly + resp.corners.lry) / 2];
+            var center_wgs84 = geo.transform.transformCoordinates(
+                resp.srs, 'EPSG:4326', center
+            );
+            $(function () {
+                'use strict';
+                // Create a map object
+                var map = geo.map({
+                    node: '#map',
+                    center: {
+                        x: center_wgs84[0],
+                        y: center_wgs84[1]
+                    },
+                    zoom: 7
+                });
 
-            map.createLayer('osm');
-            var layer = map.createLayer('osm', {
-                attribution: null,
-                keepLower: false
+                map.createLayer('osm');
+                var layer = map.createLayer('osm', {
+                    attribution: null,
+                    keepLower: false
+                });
+                var url = getApiRoot() + '/ktile/' + fileId;
+                layer.url((x, y, z) => `${url}/${z}/${x}/${y}`);
             });
-            var url = getApiRoot() + '/ktile/' + fileId;
-            layer.url((x, y, z) => `${url}/${z}/${x}/${y}`);
+        }, this));
 
-        });
     },
     render: function () {
         var fileId = this.parentView.collection.models[0].get('_id');
