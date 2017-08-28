@@ -1,0 +1,2 @@
+mapnik==0.1
+TileStache==1.51.6
