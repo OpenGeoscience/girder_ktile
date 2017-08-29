@@ -77,6 +77,7 @@ class kTile(Resource):
 
 
     @access.public
+    @access.cookie
     @rawResponse
     @autoDescribeRoute(
         Description('A tile based on a z, x, y')

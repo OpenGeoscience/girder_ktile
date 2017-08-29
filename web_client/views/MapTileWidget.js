@@ -44,7 +44,10 @@ var MapTileWidget = View.extend({
         this.$el.html(template({})).girderModal(this).on('shown.bs.modal', () => {
             this.drawMap();
         }).on('hidden.bs.modal', () => {
-            this._map.exit();
+            if (this._map) {
+                this._map.exit();
+                this._map = null;
+            }
         });
         return this;
     }
