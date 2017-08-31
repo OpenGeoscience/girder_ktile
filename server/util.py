@@ -1,7 +1,9 @@
 import os
+import struct
 
 import gdal
 import osr
+from pyproj import Proj, transform
 from TileStache import parseConfig
 
 from girder.utility.model_importer import ModelImporter
@@ -16,23 +18,31 @@ def getValueList(start, stop, count):
 
     return sequence
 
-
-def getInfo(girder_file):
-    info = {}
+def _getDatasetPath(girder_file):
     assetstore_model = ModelImporter.model('assetstore')
     assetstore = assetstore_model.load(girder_file['assetstoreId'])
     path = os.path.join(assetstore['root'], girder_file['path'])
-    dataset = gdal.Open(path)
-    geotransform = dataset.GetGeoTransform()
+
+    return path
+
+def _getProj4String(dataset):
     wkt = dataset.GetProjection()
     proj = osr.SpatialReference()
     proj.ImportFromWkt(wkt)
+
+    return proj.ExportToProj4()
+
+def getInfo(girder_file):
+    info = {}
+    path = _getDatasetPath(girder_file)
+    dataset = gdal.Open(path)
+    geotransform = dataset.GetGeoTransform()
     lrx = geotransform[0] + (dataset.RasterXSize * geotransform[1])
     lry = geotransform[3] + (dataset.RasterYSize * geotransform[5])
     info['path'] = path
     info['driver'] = dataset.GetDriver().GetDescription()
     info['pixel_size'] = geotransform[1], geotransform[5]
-    info['srs'] = proj.ExportToProj4()
+    info['srs'] = _getProj4String(dataset)
     info['size'] = dataset.RasterXSize, dataset.RasterYSize
     info['bands'] = dataset.RasterCount
     info['corners'] = {'ulx': geotransform[0],
@@ -78,3 +88,26 @@ def getLayer(girder_file, band, minimum, maximum, palette):
     layer = config.layers[layer_name]
 
     return layer
+
+def queryLayer(file, lat, lon):
+    path = _getDatasetPath(file)
+    dataset = gdal.Open(path)
+    srs = _getProj4String(dataset)
+
+    in_proj = Proj(init='epsg:4326')
+    out_proj = Proj(srs)
+    x, y = transform(in_proj, out_proj, lon, lat)
+
+    gt = dataset.GetGeoTransform()
+
+    px = int((x - gt[0]) / gt[1])
+    py = int((y - gt[3]) / gt[5])
+    result = {}
+
+    for i in range(dataset.RasterCount):
+        band = dataset.GetRasterBand(i+1)
+        value = band.ReadRaster(px, py, 1, 1, buf_type=gdal.GDT_Float32)
+        if value:
+            result['band_{}'.format(i+1)] = struct.unpack('f', value)[0]
+
+    return result
