@@ -4,77 +4,17 @@ from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, setResponseHeader, rawResponse
 from girder.constants import AccessType
-from girder.utility.model_importer import ModelImporter
 
-
-import gdal
-import osr
-from TileStache import parseConfig, getTile
 from ModestMaps.Core import Coordinate
 
+from girder.plugins.girder_ktile.util import getInfo, getLayer
 
 class kTile(Resource):
     def __init__(self):
         super(kTile, self).__init__()
         self.resourceName = 'ktile'
-
-        self.route('GET', (':id', ':z', ':x', ':y'), self.getTile)
+        self.route('GET', (':id', ':z', ':x', ':y',), self.getTile)
         self.route('GET', (':id', 'info'), self.getTiffInfo)
-
-    def _getLayer(self, girder_file):
-        layer_name = os.path.splitext(girder_file['name'])[0]
-        info = kTile._getInfo(girder_file)
-        config_dict = {
-            "cache":
-            {
-                "name": "Test",
-                "path": "/tmp/stache",
-                "umask": "0000"
-            },
-            "layers":
-            {
-                "{}".format(layer_name):
-                {
-                    "provider":
-                    {
-                        "class": "girder.plugins.girder_ktile.provider:MapnikProvider",
-                        "kwargs": {"file": girder_file,
-                                   "info": info}
-                    },
-                    "projection": "spherical mercator"
-                }
-            }
-        }
-        config = parseConfig(config_dict)
-        layer = config.layers[layer_name]
-
-        return layer
-
-    @staticmethod
-    def _getInfo(file):
-        info = {}
-        assetstore_model = ModelImporter.model('assetstore')
-        assetstore = assetstore_model.load(file['assetstoreId'])
-        path = os.path.join(assetstore['root'], file['path'])
-        dataset = gdal.Open(path)
-        geotransform = dataset.GetGeoTransform()
-        wkt = dataset.GetProjection()
-        proj = osr.SpatialReference()
-        proj.ImportFromWkt(wkt)
-        lrx = geotransform[0] + (dataset.RasterXSize * geotransform[1])
-        lry = geotransform[3] + (dataset.RasterYSize * geotransform[5])
-        info['path'] = path
-        info['driver'] = dataset.GetDriver().GetDescription()
-        info['pixel_size'] = geotransform[1], geotransform[5]
-        info['srs'] = proj.ExportToProj4()
-        info['size'] = dataset.RasterXSize, dataset.RasterYSize
-        info['bands'] = dataset.RasterCount
-        info['corners'] = {'ulx': geotransform[0],
-                           'uly': geotransform[3],
-                           'lrx': lrx,
-                           'lry': lry}
-        return info
-
 
     @access.public
     @access.cookie
@@ -86,10 +26,21 @@ class kTile(Resource):
         .param('z', 'Zoom level', paramType='path')
         .param('x', 'X Coordinate', paramType='path')
         .param('y', 'Y Coordinate', paramType='path')
+        .param('band', 'Band number to be visualized',
+               default=-1, paramType='query')
+        .param('minimum', 'Minimum value for the band',
+               default='0', paramType='query')
+        .param('maximum', 'Maximum value for the band',
+               default='256', paramType='query')
+        .param('palette', 'Palette from given source',
+               default='cmocean.diverging.Curl_10', paramType='query')
     )
     def getTile(self, file, z, x, y, params):
         coordinates = Coordinate(int(y), int(x), int(z))
-        layer = self._getLayer(file)
+        band = params['band']
+        palette = params['palette']
+        layer = getLayer(file, band, params['minimum'],
+                         params['maximum'], palette)
         status_code, headers, tile = layer.getTileResponse(coordinates, 'png')
         setResponseHeader('Content-Type', headers.values()[0])
         return tile
@@ -101,4 +52,4 @@ class kTile(Resource):
                     model='file', level=AccessType.READ)
     )
     def getTiffInfo(self, file, params):
-        return kTile._getInfo(file)
+        return getInfo(file)
