@@ -2,10 +2,8 @@ import os
 
 import gdal
 import osr
-from TileStache import parseConfig
 
 from girder.utility.model_importer import ModelImporter
-from girder.plugins.girder_ktile.style import getColorList
 
 
 def getValueList(start, stop, count):
@@ -40,41 +38,3 @@ def getInfo(girder_file):
                        'lrx': lrx,
                        'lry': lry}
     return info
-
-def getLayer(girder_file, band, minimum, maximum, palette):
-    layer_name = os.path.splitext(girder_file['name'])[0]
-    count = int(palette.split('_')[-1])
-    color_list = getColorList(palette)
-    value_list = getValueList(float(minimum),
-                              float(maximum),
-                              count)
-    info = getInfo(girder_file)
-    config_dict = {
-        "cache":
-        {
-            "name": "Test",
-            "path": "/tmp/stache",
-            "umask": "0000"
-        },
-        "layers":
-        {
-            "{}".format(layer_name):
-            {
-                "provider":
-                {
-                    "class": "girder.plugins.girder_ktile.provider:MapnikProvider",
-                    "kwargs": {"file": girder_file,
-                               "info": info,
-                               "band": band,
-                               "minimum": minimum,
-                               "maximum": maximum,
-                               "style": zip(color_list, value_list)}
-                },
-                "projection": "spherical mercator"
-            }
-        }
-    }
-    config = parseConfig(config_dict)
-    layer = config.layers[layer_name]
-
-    return layer

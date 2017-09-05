@@ -13,7 +13,8 @@ wrap(FileListWidget, 'render', function (render) {
     render.call(this);
     _.each(this.$('.g-file-list-link'), (link) => {
         const file = this.collection.get($(link).attr('cid'));
-        if (file.get('mimeType') === 'image/tiff') {
+        if (file.get('mimeType') === 'image/tiff' ||
+	    file.get('mimeType') === 'application/x-esri-shape') {
             $(link).after(buttonViewTemplate({cid: file.cid}));
         }
     });

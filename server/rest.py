@@ -7,7 +7,8 @@ from girder.constants import AccessType
 
 from ModestMaps.Core import Coordinate
 
-from girder.plugins.girder_ktile.util import getInfo, getLayer
+from girder.plugins.girder_ktile.util import getInfo
+from girder.plugins.girder_ktile.providers import getLayer
 
 class kTile(Resource):
     def __init__(self):
@@ -37,12 +38,10 @@ class kTile(Resource):
     )
     def getTile(self, file, z, x, y, params):
         coordinates = Coordinate(int(y), int(x), int(z))
-        band = params['band']
-        palette = params['palette']
-        layer = getLayer(file, band, params['minimum'],
-                         params['maximum'], palette)
+        layer = getLayer(file, params)
         status_code, headers, tile = layer.getTileResponse(coordinates, 'png')
         setResponseHeader('Content-Type', headers.values()[0])
+
         return tile
 
     @access.public

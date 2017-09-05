@@ -7,7 +7,7 @@ from PIL import Image
 from girder.utility.model_importer import ModelImporter
 
 
-class MapnikProvider(object):
+class GeotiffProvider(object):
     def __init__(self, layer, **kwargs):
         self.girder_file = kwargs['file']
         self.info = kwargs['info']
@@ -34,7 +34,7 @@ class MapnikProvider(object):
         lyr = mapnik.Layer('GDAL Layer from TIFF file')
         lyr.srs = self.info['srs']
         lyr.datasource = mapnik.Gdal(base='',
-                                     file=self.info['path'],
+                                     file=file,
                                      band=self.band)
         lyr.styles.append('Raster Style')
         m.layers.append(lyr)
@@ -43,7 +43,7 @@ class MapnikProvider(object):
         mapnik_map = mapnik.Map(width, height, srs)
         mapnik_map.zoom_to_box(mapnik.Box2d(xmin, ymin, xmax, ymax))
         img = mapnik.Image(width, height)
-        self.addStyle(mapnik_map, self.girder_file['path'])
+        self.addStyle(mapnik_map, self.info['path'])
         mapnik.render(mapnik_map, img)
 
         return Image.frombytes('RGBA', (width, height), img.tostring())
