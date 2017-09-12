@@ -7,7 +7,7 @@ from girder.constants import AccessType
 
 from ModestMaps.Core import Coordinate
 
-from girder.plugins.girder_ktile.util import getInfo, getLayer
+from girder.plugins.girder_ktile.util import getInfo, getLayer, queryLayer
 
 class kTile(Resource):
     def __init__(self):
@@ -15,6 +15,7 @@ class kTile(Resource):
         self.resourceName = 'ktile'
         self.route('GET', (':id', ':z', ':x', ':y',), self.getTile)
         self.route('GET', (':id', 'info'), self.getTiffInfo)
+        self.route('GET', (':id', 'query',), self.getLocationInfo)
 
     @access.public
     @access.cookie
@@ -53,3 +54,17 @@ class kTile(Resource):
     )
     def getTiffInfo(self, file, params):
         return getInfo(file)
+
+    @access.public
+    @autoDescribeRoute(
+        Description('Query layer based on a lat-long')
+        .modelParam('id', 'Te ID of the file to be queried.',
+                    model='file', level=AccessType.READ)
+        .param('lat', 'Latitude', paramType='query')
+        .param('lon', 'Longitude', paramType='query')
+    )
+    def getLocationInfo(self, file, params):
+        lat = params['lat']
+        lon = params['lon']
+        values = queryLayer(file, lat, lon)
+        return values
