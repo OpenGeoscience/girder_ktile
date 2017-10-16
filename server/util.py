@@ -32,6 +32,16 @@ def _getProj4String(dataset):
 
     return proj.ExportToProj4()
 
+def _getBandStats(dataset):
+    stats = {}
+    stats_tags = ['min', 'max', 'mean', 'stdev']
+    for i in range(dataset.RasterCount):
+        band = dataset.GetRasterBand(i+1)
+        band_stats = band.GetStatistics(True, True)
+        stats[i+1] = dict(zip(stats_tags, band_stats))
+
+    return stats
+
 def getInfo(girder_file):
     info = {}
     path = _getDatasetPath(girder_file)
@@ -44,7 +54,7 @@ def getInfo(girder_file):
     info['pixel_size'] = geotransform[1], geotransform[5]
     info['srs'] = _getProj4String(dataset)
     info['size'] = dataset.RasterXSize, dataset.RasterYSize
-    info['bands'] = dataset.RasterCount
+    info['bands'] = _getBandStats(dataset)
     info['corners'] = {'ulx': geotransform[0],
                        'uly': geotransform[3],
                        'lrx': lrx,
