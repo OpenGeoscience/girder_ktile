@@ -1,5 +1,3 @@
-import os
-
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, setResponseHeader, rawResponse
@@ -8,6 +6,7 @@ from girder.constants import AccessType
 from ModestMaps.Core import Coordinate
 
 from girder.plugins.girder_ktile.util import getInfo, getLayer, queryLayer
+
 
 class kTile(Resource):
     def __init__(self):

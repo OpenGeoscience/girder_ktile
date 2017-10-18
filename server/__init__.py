@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from girder import events, logger
+from girder import logger
 from girder.utility.model_importer import ModelImporter
 from .constants import PluginSettings
 from .rest import kTile

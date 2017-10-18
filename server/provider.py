@@ -1,20 +1,14 @@
-import gdal
 import mapnik
-import osr
-import os
 from PIL import Image
-
-from girder.utility.model_importer import ModelImporter
 
 
 class MapnikProvider(object):
     def __init__(self, layer, **kwargs):
-        self.girder_file = kwargs['file']
         self.info = kwargs['info']
         self.band = kwargs['band']
         self.style = kwargs['style']
 
-    def addStyle(self, m, file):
+    def addStyle(self, m):
         style = mapnik.Style()
         rule = mapnik.Rule()
         sym = mapnik.RasterSymbolizer()
@@ -43,7 +37,7 @@ class MapnikProvider(object):
         mapnik_map = mapnik.Map(width, height, srs)
         mapnik_map.zoom_to_box(mapnik.Box2d(xmin, ymin, xmax, ymax))
         img = mapnik.Image(width, height)
-        self.addStyle(mapnik_map, self.girder_file['path'])
+        self.addStyle(mapnik_map)
         mapnik.render(mapnik_map, img)
 
         return Image.frombytes('RGBA', (width, height), img.tostring())

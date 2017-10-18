@@ -7,7 +7,7 @@ from girder.models.model_base import ValidationException
 # For more on testing your Python plugins, see:
 # http://girder.readthedocs.io/en/latest/plugin-development.html#automated-testing-for-plugins
 def setUpModule():
-    base.enabledPlugins.append('ktile')
+    base.enabledPlugins.append('girder_ktile')
     base.startServer()
 
 
@@ -31,13 +31,13 @@ class kTileTest(base.TestCase):
         pass
 
     def testItemMetadataValidates(self):
-        from girder.plugins.ktile.constants import PluginSettings
+        from girder.plugins.girder_ktile.constants import PluginSettings
 
         with self.assertRaises(ValidationException):
             self.model('setting').set(PluginSettings.ITEM_METADATA, '')
 
     def testItemMetadataRetrieval(self):
-        from girder.plugins.ktile.constants import PluginSettings
+        from girder.plugins.girder_ktile.constants import PluginSettings
 
         # Test default value is retrieved
         resp = self.request('/ktile/item_metadata', user=self.admin_user)

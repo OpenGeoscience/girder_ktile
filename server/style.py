@@ -1,5 +1,6 @@
 import importlib
 
+
 def getColorList(palette):
     params = palette.split('.')
     palette = params[-1]

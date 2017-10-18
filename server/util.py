@@ -10,27 +10,36 @@ from girder.utility.model_importer import ModelImporter
 from girder.plugins.girder_ktile.style import getColorList
 
 
+UseFuse = True
+
+
 def getValueList(start, stop, count):
     sequence = []
     step = (stop - start) / (float(count) - 1)
     for i in range(count):
-      sequence.append(float(start + i * step))
+        sequence.append(float(start + i * step))
 
     return sequence
+
 
 def _getDatasetPath(girder_file):
     assetstore_model = ModelImporter.model('assetstore')
     assetstore = assetstore_model.load(girder_file['assetstoreId'])
-    path = os.path.join(assetstore['root'], girder_file['path'])
-
+    if not UseFuse or not hasattr(ModelImporter.model('file'), 'getFuseFilePath'):
+        path = os.path.join(assetstore['root'], girder_file['path'])
+    else:
+        path = ModelImporter.model('file').getFuseFilePath(girder_file)
     return path
+
 
 def _getProj4String(dataset):
     wkt = dataset.GetProjection()
     proj = osr.SpatialReference()
     proj.ImportFromWkt(wkt)
 
-    return proj.ExportToProj4()
+    result = proj.ExportToProj4()
+    return result
+
 
 def _getBandStats(dataset):
     stats = {}
@@ -41,6 +50,7 @@ def _getBandStats(dataset):
         stats[i+1] = dict(zip(stats_tags, band_stats))
 
     return stats
+
 
 def getInfo(girder_file):
     info = {}
@@ -60,6 +70,7 @@ def getInfo(girder_file):
                        'lrx': lrx,
                        'lry': lry}
     return info
+
 
 def getLayer(girder_file, band, minimum, maximum, palette):
     layer_name = os.path.splitext(girder_file['name'])[0]
@@ -83,8 +94,7 @@ def getLayer(girder_file, band, minimum, maximum, palette):
                 "provider":
                 {
                     "class": "girder.plugins.girder_ktile.provider:MapnikProvider",
-                    "kwargs": {"file": girder_file,
-                               "info": info,
+                    "kwargs": {"info": info,
                                "band": band,
                                "minimum": minimum,
                                "maximum": maximum,
@@ -98,6 +108,7 @@ def getLayer(girder_file, band, minimum, maximum, palette):
     layer = config.layers[layer_name]
 
     return layer
+
 
 def queryLayer(file, lat, lon):
     path = _getDatasetPath(file)
