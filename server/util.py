@@ -9,6 +9,9 @@ from TileStache import parseConfig
 from girder.utility.model_importer import ModelImporter
 from girder.plugins.girder_ktile.style import getColorList
 
+# Python bindings do not raise exceptions unless you
+# explicitly call UseExceptions()
+gdal.UseExceptions()
 
 def getValueList(start, stop, count):
     sequence = []
@@ -116,8 +119,11 @@ def queryLayer(file, lat, lon):
 
     for i in range(dataset.RasterCount):
         band = dataset.GetRasterBand(i+1)
-        value = band.ReadRaster(px, py, 1, 1, buf_type=gdal.GDT_Float32)
-        if value:
-            result['band_{}'.format(i+1)] = struct.unpack('f', value)[0]
+        try:
+            value = band.ReadRaster(px, py, 1, 1, buf_type=gdal.GDT_Float32)
+            if value:
+                result['band_{}'.format(i+1)] = struct.unpack('f', value)[0]
+        except RuntimeError:
+            pass
 
     return result
